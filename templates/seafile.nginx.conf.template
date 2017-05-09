@@ -1,6 +1,6 @@
 # -*- mode: nginx -*-
 # Auto generated at {{ current_timestr }}
-{% if https -%}
+{% if https and (not service_port or service_port == '80') %}
 server {
     listen 80;
     server_name _ default_server;
@@ -10,7 +10,11 @@ server {
 
 server {
 {% if https -%}
+  {% if service_port and service_port != '80' %}
+    listen {{ service_port }};
+  {% else %}
     listen 443;
+  {% endif %}
     ssl on;
     ssl_certificate      /shared/ssl/{{ domain }}.crt;
     ssl_certificate_key  /shared/ssl/{{ domain }}.key;
@@ -23,7 +27,11 @@ server {
     # ssl_session_cache shared:SSL:10m;
     # ssl_session_timeout 10m;
 {% else -%}
+  {% if service_port and service_port != '80' %}
+    listen {{ service_port }};
+  {% else %}
     listen 80;
+  {% endif %}
 {% endif -%}
 
     server_name {{ domain }};
@@ -33,7 +41,11 @@ server {
     location / {
         proxy_pass http://127.0.0.1:8000/;
         proxy_read_timeout 310s;
+        {% if service_port and service_port != '80' %}
+        proxy_set_header Host $host:{{ service_port }};
+        {% else %}
         proxy_set_header Host $host;
+        {% endif %}
         proxy_set_header Forwarded "for=$remote_addr;proto=$scheme";
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;

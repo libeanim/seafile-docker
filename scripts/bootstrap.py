@@ -74,9 +74,11 @@ def init_letsencrypt():
 def generate_local_nginx_conf():
     # Now create the final nginx configuratin
     domain = get_conf('server.hostname')
+    service_port = get_conf('server.service_port')
     context = {
         'https': is_https(),
         'domain': domain,
+        'service_port': service_port
     }
     render_template(
         '/templates/seafile.nginx.conf.template',
@@ -142,9 +144,13 @@ def init_seafile_server():
 
     domain = get_conf('server.hostname')
     proto = 'https' if is_https() else 'http'
+    service_port = ''
+    if get_conf('server.service_port') and get_conf('server.service_port') != '80':
+        service_port = get_conf('server.service_port')
     with open(join(topdir, 'conf', 'seahub_settings.py'), 'a+') as fp:
         fp.write('\n')
-        fp.write('FILE_SERVER_ROOT = "{proto}://{domain}/seafhttp"'.format(proto=proto, domain=domain))
+        fp.write('FILE_SERVER_ROOT = "{proto}://{domain}{service_port}/seafhttp"'.format(proto=proto, domain=domain,
+                                                                                         service_port=service_port))
         fp.write('\n')
 
     # By default ccnet-server binds to the unix socket file
